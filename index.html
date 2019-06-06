@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+  <title>Big</title>
+  <link href="big.css" rel="stylesheet" type="text/css" />
+  <link href="themes/dark.css" rel="stylesheet" type="text/css" />
+  <script src="big.js"></script>
+  <style>
+    .ol {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body class="dark">
+  <div>
+    <span class="ol">Streams <em>Whack-a-Mole</em></span>
+  </div>
+  <div>
+    @<em>mafintosh</em>
+  </div>
+  <div>
+    <span class="ol"><em>P2P</em></span>
+    <span class="ol">Node.js Core</span>
+    <span class="ol">Streams</span>
+  </div>
+  <div style="background-image: url(wam.gif); background-repeat: no-repeat; padding: 30.08px; font-size: 630px; width: 100%; height: 100%; background-size: contain;">
+  </div>
+  <div>
+    A <em>depressing</em> story on why you probably <em>all have bugs in your streams</em>
+  </div>
+  <div>
+    A <em>Brief History</em> of Node.js Streams
+  </div>
+  <div>
+    Streams 1 - Node.js <em>0.6</em>
+  </div>
+  <div>
+    Basically <em>DIY</em> streams.
+  </div>
+  <div>
+    <pre><code>
+var Stream = require(<em>'stream'</em>)
+var s = new Stream() // just has .pipe
+s.emit(<em>'data'</em>, <em>'hi'</em>) // you manually emit data
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+s.on(<em>'data'</em>, data => console.log(<em>'got data:'</em>, data)
+if (s.pause) s.pause() // let's hope someone impl'ed pause
+    </code></pre>
+  </div>
+  <div>
+    <em class=ol>Simple</em>!<br>
+    <span class=ol><em>Push</em> based</span><br>
+    <span class="ol">But ... hard as you had to impl ... <em>everything</em></span>
+  </div>
+  <div>
+    Streams 2 - Node.js <em>0.10</em>
+  </div>
+  <div>
+    <pre><code>
+var { Readable } = require(<em>'stream'</em>)
+var s = new Readable() // proper abstract class
+s._read = data => s.push(<em>'hi'</em>)
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+s.on(<em>'readable'</em>, function () {
+  var data = s.read()
+})
+</code></pre>
+  </div>
+  <div>
+    <em>Complex</em>
+    <span class=ol>Batteries included</span>
+    <span class=ol>Pull based</span>
+  </div>
+  <div>
+    Streams 3 - Node.js <em>~0.11</em>
+  </div>
+  <div>
+    Small iteration on 2.
+  </div>
+  <div>
+    <em>~</em> Makes the <em>s.on('data')</em> work together with the <em>s.read()</em> stuff
+  </div>
+  <div>
+    Streams are still <em>evolving</em>
+  </div>
+  <div>
+    Everytime we fix a <em>bug</em> we <em>break</em> tons of things
+  </div>
+  <div>
+    Streams are probably the <em>most complex objects</em> returned from Node.js core
+  </div>
+  <div>
+    <pre><code>
+var stream = require(<em>'stream'</em>)
+var rs = new stream.Readable()
+                                      <span style="color: transparent;">.</span>
+rs.destroy()
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var stream = require(<em>'stream'</em>)
+var rs = new stream.Readable()
+<em>// fails in Node.js 6</em>                 <span style="color: transparent;">.</span>
+rs.destroy()
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var stream = require(<em>'stream'</em>)
+var rs = new stream.Readable()
+<em>// triggers rs.push(null) in Node.js 8</em><span style="color: transparent;">.</span>
+rs.destroy()
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var stream = require(<em>'stream'</em>)
+var rs = new stream.Readable()
+<em>// emits('close') in Node.js 10</em>       <span style="color: transparent;">.</span>
+rs.destroy()
+    </code></pre>
+  </div>
+  <div>
+    <em>readable-stream</em> is an official npm mirror of streams
+  </div>
+  <div>
+<pre><code>
+var stream = require(<em>'readable-stream'</em>)
+var rs = new stream.Readable()
+</code></pre>
+  </div>
+  <div>
+    If you are writing stream modules always use readable-stream
+    <em>- then you know what you get</em>
+  </div>
+  <div>
+    <pre><code>
+var s = fs.createReadStream(<em>'filename.txt'</em>)
+
+
+s.on(<em>'end'</em>, function () {
+  console.log(<em>'stream ended'</em>)
+})
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var s = fs.createReadStream('filename.txt')
+<em>// 'end' is never triggered</em>
+<em>// as the stream is never "drained"</em>
+s.on('end', function () {
+  console.log('stream ended')
+})
+    </code></pre>
+  </div>
+  <div>
+    <em>Memory leak.</em> Always drain your streams.
+  </div>
+  <div>
+    <pre><code>
+var s = fs.createReadStream('filename.txt')
+
+<em>s.resume()</em>
+s.on('end', function () {
+  console.log('stream ended')
+})
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var s = fs.createReadStream('filename.txt')
+
+<em>s.on('readable', () => while(s.read());)</em>
+s.on('end', function () {
+  console.log('stream ended')
+})
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var s = fs.createReadStream('filename.txt')
+
+<em>s.pipe(destination)</em>
+s.on('end', function () {
+  console.log('stream ended')
+})
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var s = fs.createReadStream('filename.txt')
+
+<em>s.on('data', data => console.log(data))</em>
+s.on('end', function () {
+  console.log('stream ended')
+})
+    </code></pre>
+  </div>
+  <div>
+    Yes, <em>on('data')</em> has magic behaivor
+  </div>
+  <div>
+    (basically triggers <em>s.resume()</em> if <em>s.pause()</em> was not called)
+  </div>
+  <div>
+    <em>on('end')</em> does not mean end
+  </div>
+  <div>
+    <em>on('end')</em> means readable side succeded and is done
+  </div>
+  <div>
+    <pre><code>
+activeStreams++
+
+stream.on('data', ...)
+stream.on('end', function () {
+  activeStreams--
+})
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+activeStreams++
+<em>// 'end' might never fire</em>
+stream.on('data', ...)
+stream.on('end', function () {
+  activeStreams--
+})
+    </code></pre>
+  </div>
+  <div>
+    Streams can end with either <em>'close', 'error', 'finish', and/or 'end'</em>
+  </div>
+  <div>
+    <pre><code>
+activeStreams++
+stream.on('data', ...)
+let once = false
+<em>
+stream.on('end', done)
+stream.on('finish', done)
+stream.on('close', done)
+stream.on('error', done)
+</em>
+function done () {
+  if (once) return
+  once = true
+  activeStreams--
+}
+    </code></pre>
+  </div>
+  <div>
+    <em>'finish'</em> means writable side succeded and is done
+  </div>
+  <div>
+    triggered by <em>stream.end()</em>
+  </div>
+  <div>
+    <span class=ol>stream.push(<em>null</em>) -> stream.on(<em>'end'</em>)</span>
+    <span class=ol>stream.end() -> stream.on(<em>'finish'</em>)</span>
+  </div>
+  <div style="background-image: url(why.gif); background-repeat: no-repeat; padding: 30.08px; font-size: 630px; width: 100%; height: 100%; background-size: contain;">
+  </div>
+  <div>
+    Backwards <em>compat</em>
+  </div>
+  <div>
+    <pre><code>
+var finished = <em>require('end-of-stream')</em> <span style="color: transparent;">.</span>
+activeStreams++
+finished(stream, function (err) {
+  activeStreams--
+})
+  </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var finished = <em>require('stream').finished</em>
+activeStreams++
+finished(stream, function (err) {
+  activeStreams--
+})
+  </code></pre>
+  </div>
+  <div>
+    <img src="eos.png" style="display: block">
+  </div>
+  <div>
+<pre><code>
+http.createServer(function (req, res) {
+
+  fs.createReadStream('file.data').pipe(res)
+})
+</code></pre>
+  </div>
+  <div>
+<pre><code>
+http.createServer(function (req, res) {
+  <em>// Will memory leak if res closes</em>
+  fs.createReadStream('file.data').pipe(res)
+})
+</code></pre>
+  </div>
+  <div>
+    <em>pipe()</em> does not do error handling
+  </div>
+  <div>
+<pre><code>
+<em>const { finished } = require('stream')</em>
+http.createServer(function (req, res) {
+  const s = fs.createReadStream('file.data')
+  <em>finished(s, (err) => { if (err) res.destroy() })
+  finished(res, (err) => { if (err) s.destroy() })</em>
+  s.pipe(res)
+})
+</code></pre>
+  </div>
+  <div>
+    Never use <em>pipe()</em>
+  </div>
+  <div>
+<pre><code>
+const pump = require('pump')
+http.createServer(function (req, res) {
+
+  <em>pump(fs.createReadStream('file.data', res) </em>                <span style="color: transparent;">.</span>
+})
+</code></pre>
+  </div>
+  <div>
+<pre><code>
+const pump = require('pump')
+http.createServer(function (req, res) {
+  <em>// error handles, shutdowns streams etc, callback support</em>
+  pump(fs.createReadStream('file.data', res, (err) => { ... })
+})
+</code></pre>
+  </div>
+  <div>
+<pre><code>
+const pump = <em>require('stream').pipeline</em>
+http.createServer(function (req, res) {
+  // error handles, shutdowns streams etc, callback support
+  pump(fs.createReadStream('file.data', res, (err) => { ... })
+})
+</code></pre>
+  </div>
+  <div>
+    <img src="pump.png" style="display: block">
+  </div>
+</body>
+</html>
