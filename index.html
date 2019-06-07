@@ -357,5 +357,101 @@ http.createServer(function (req, res) {
   <div>
     <img src="pump.png" style="display: block">
   </div>
+  <div>
+    <pre><code>
+var s = new stream.Writable()
+
+s._write = (data, enc, cb) => {
+  <em>if (isHandshake(data)) {
+    this.emit('handshake')
+    <span style="color: transparent;">// stream might be destroyed so this might error</span>
+    s.push(data.slice(offset))
+  }</em>
+}
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var s = new stream.Writable()
+
+s._write = (data, enc, cb) => {
+  if (isHandshake(data)) {
+    this.emit('handshake') <em>// can have side-effects!</em>
+    <em>// stream might be destroyed so this might error</em>
+    s.push(data.slice(offset))
+  }
+}
+    </code></pre>
+  </div>
+  <div>
+    <pre><code>
+var s = new stream.Writable()
+
+s._write = (data, enc, cb) => {
+  if (isHandshake(data)) {
+    this.emit('handshake')
+    <em>if (s.destroyed) return</em>                        <span style="color: transparent;">.</span>
+    s.push(data.slice(offset))
+  }
+}
+    </code></pre>
+  </div>
+  <div>
+    Everytime you <em>emit('event')</em> you have
+    to re-check any public state
+  </div>
+  <div>
+    This usually means checking <em>if you were destroyed</em>
+  </div>
+  <div>
+    *<em>phew</em>*
+  </div>
+  <div>
+    There are more, honestly ... <em>read the source :/</em>
+  </div>
+  <div>
+    The Future
+  </div>
+  <div>
+    Stream <em>4</em>?
+  </div>
+  <div>
+    Stream <em>5</em>?
+  </div>
+  <div>
+    Stream <em>X</em>!
+  </div>
+  <div>
+    <a href="https://github.com/mafintosh/streamx">https://github.com/mafintosh/streamx</a>
+  </div>
+  <div>
+    Makes streams <em>easier</em> to implement
+  </div>
+  <div>
+    <em>Error handling pipe</em>, proper life cycle support, <em>backwards compat</em>, and more
+  </div>
+  <div>
+    <pre><code>
+      const w = new streamx.Writable({
+        open (cb) {
+          fs.open(filename, (err, fd) => {
+            if (err) return cb(err)
+            w.fd = fd
+            cb()
+          })
+        }
+        write (data, cb) {
+          fs.write(this.fd, data, 0, data.length, null, cb)
+        },
+        destroy (cb) {
+          if (!w.fd) return cb()
+          fs.close(w.fd, cb)
+        }
+      })
+    </code></pre>
+  </div>
+  <div>
+    Thank you!
+  </div>
 </body>
 </html>
